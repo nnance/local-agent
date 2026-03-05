@@ -2,10 +2,17 @@
 
 ## Overview
 
-A lightweight web application that provides a chat interface for interacting with an LLM-powered agent. The application uses the **OpenAI streaming messages API** as the communication protocol between the front end and the LLM, keeping the backend minimal and largely built on Node.js built-in capabilities. The agent is **general purpose** — it can assist with any task the user describes, not limited to computer operation.
+A general-purpose LLM agent **purpose-built for local models**.
+
+Current agent solutions are designed around SaaS models with large context windows (128k+ tokens). They load the full chat history, all tool definitions, reference documents, and system instructions into every request. This works with cloud-hosted models but fails with local models where context windows are significantly smaller and every token counts.
+
+Local Agent takes a fundamentally different approach: **minimize what goes into the context window on every turn**. Instead of front-loading all possible context, the agent uses progressive discovery — the LLM learns what's available and requests additional context only when it needs it. This results in more conversational turns (the LLM has to ask for things) but keeps each turn well within the limits of smaller models.
+
+The application uses the **OpenAI streaming messages API** as the communication protocol, keeping the backend minimal and built on Node.js built-in capabilities. Any OpenAI-compatible provider works — Ollama, LM Studio, llama.cpp, or hosted services.
 
 ## Design Philosophy
 
+- **Context-window conscious**: Every design decision optimizes for small context windows. Only skill names and descriptions are loaded per turn. Chat history, tool definitions, templates, and reference files are loaded progressively — the LLM discovers and requests what it needs. More turns, less context pressure.
 - **Minimal dependencies**: Use Node.js built-in modules (HTTP server, filesystem, path, crypto, etc.) wherever possible. Dependencies are acceptable for front-end components but should be minimized on the backend.
 - **Minimal deterministic code**: The core application has only four responsibilities:
   1. **Front-end interaction** — Serve the UI and handle user input/output

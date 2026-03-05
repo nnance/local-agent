@@ -146,14 +146,19 @@ Script: read (scripts/read.sh)
 
 ### What Goes Into LLM Context
 
-On every request to the LLM, the following is included:
+This is the most critical design point. Local Agent is built for **local models with small context windows**. Traditional agent frameworks dump everything into every request. We do the opposite — load the minimum and let the LLM discover more as needed. This means more turns but each turn fits within constrained context limits.
 
+**Loaded on every turn** (lightweight, always present):
 1. **System prompt** — loaded from the configurable system prompt file
-2. **Skill summaries** — for every loaded skill, its `name` and `description` (lightweight, always present)
+2. **Skill summaries** — for every loaded skill, just its `name` and `description` (a few tokens each)
 3. **Tool definitions** — for every script across all loaded skills, the OpenAI tool definition
-4. **Conversation messages** — the user/assistant/tool message history
 
-Templates, references, and the markdown body of `SKILL.md` are **not** loaded by default. They are available for the LLM to request dynamically via built-in meta-tools (see below).
+**NOT loaded by default** (available on demand via meta-tools):
+- Templates
+- Reference files
+- The markdown body of `SKILL.md`
+
+The LLM reads the skill summaries to understand what's available, then requests additional context (templates, references) only when it determines they're needed for the current task. This trades fewer tokens per turn for more round trips — the right tradeoff for local models.
 
 ## Dynamic Content Loading
 
