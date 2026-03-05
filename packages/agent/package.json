@@ -1,0 +1,17 @@
+{
+	"name": "@local-agent/agent",
+	"version": "0.1.0",
+	"private": true,
+	"type": "module",
+	"scripts": {
+		"dev": "tsx watch --env-file=.env src/index.ts",
+		"start": "tsx --env-file=.env src/index.ts",
+		"test": "tsx --test test/**/*.test.ts",
+		"typecheck": "tsc --noEmit"
+	},
+	"devDependencies": {
+		"tsx": "^4.19.0",
+		"typescript": "^5.7.0",
+		"@types/node": "^22.0.0"
+	}
+}
