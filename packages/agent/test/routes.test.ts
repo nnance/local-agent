@@ -202,11 +202,17 @@ describe("API routes", () => {
 	});
 
 	describe("GET /api/skills", () => {
-		it("should return 200 with empty skills list", async () => {
+		it("should return 200 with loaded skills", async () => {
 			const { status, body } = await fetchJson(`${baseUrl}/api/skills`);
 
 			assert.equal(status, 200);
-			assert.deepEqual(body, { skills: [] });
+			assert.ok(Array.isArray(body.skills));
+			assert.ok(body.skills.length > 0);
+
+			const names = body.skills.map((s: { name: string }) => s.name);
+			assert.ok(names.includes("file-read"));
+			assert.ok(names.includes("file-write"));
+			assert.ok(names.includes("shell-execute"));
 		});
 	});
 
