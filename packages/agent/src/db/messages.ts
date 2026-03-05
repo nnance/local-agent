@@ -8,6 +8,7 @@ export const createMessage = (
 	role: MessageRole,
 	content: string,
 	metadata?: string | null,
+	toolCallId?: string | null,
 ): Message => {
 	const id = randomUUID();
 	const now = new Date().toISOString();
@@ -16,7 +17,7 @@ export const createMessage = (
 		session_id: sessionId,
 		role,
 		content,
-		tool_call_id: null,
+		tool_call_id: toolCallId ?? null,
 		timestamp: now,
 		metadata: metadata ?? null,
 	};

@@ -3,9 +3,37 @@ import type Database from "better-sqlite3";
 import { parseJsonBody } from "../body.ts";
 import { createMessage, getMessages } from "../db/index.ts";
 import { getSession } from "../db/index.ts";
+import type { ConversationDeps } from "../llm/conversation.ts";
+import { createConversationDeps, runConversationLoop } from "../llm/conversation.ts";
+import type { SseEvent } from "../llm/types.ts";
 import { sendJson } from "../router.ts";
+import type { SkillRegistry } from "../skills/registry.ts";
 
-export const createMessageHandlers = (db: Database.Database) => {
+const formatSseEvent = (event: SseEvent): string => {
+	switch (event.type) {
+		case "content":
+			return `event: content\ndata: ${JSON.stringify({ text: event.text })}\n\n`;
+		case "tool_call":
+			return `event: tool_call\ndata: ${JSON.stringify({ id: event.id, name: event.name, params: event.params })}\n\n`;
+		case "tool_result":
+			return `event: tool_result\ndata: ${JSON.stringify({ id: event.id, result: event.result })}\n\n`;
+		case "done":
+			return "event: done\ndata: {}\n\n";
+		case "error":
+			return `event: error\ndata: ${JSON.stringify({ message: event.message })}\n\n`;
+	}
+};
+
+export const createMessageHandlers = (db: Database.Database, registry: SkillRegistry) => {
+	let conversationDeps: ConversationDeps | null = null;
+
+	const getDeps = async (): Promise<ConversationDeps> => {
+		if (!conversationDeps) {
+			conversationDeps = await createConversationDeps(db, registry);
+		}
+		return conversationDeps;
+	};
+
 	const handleCreateMessage = async (
 		req: IncomingMessage,
 		res: ServerResponse,
@@ -22,6 +50,7 @@ export const createMessageHandlers = (db: Database.Database) => {
 		const body = await parseJsonBody<{ content?: string; metadata?: string }>(req);
 		const content = body.content ?? "";
 
+		// Persist user message
 		const userMessage = createMessage(
 			db,
 			id,
@@ -30,6 +59,7 @@ export const createMessageHandlers = (db: Database.Database) => {
 			body.metadata ? JSON.stringify(body.metadata) : null,
 		);
 
+		// Start SSE stream
 		res.writeHead(200, {
 			"Content-Type": "text/event-stream",
 			"Cache-Control": "no-cache",
@@ -40,13 +70,19 @@ export const createMessageHandlers = (db: Database.Database) => {
 			`event: message_saved\ndata: ${JSON.stringify({ id: userMessage.id, session_id: id })}\n\n`,
 		);
 
-		const stubContent = "This is a stub response from the agent.";
-		const assistantMessage = createMessage(db, id, "assistant", stubContent);
+		// Run conversation loop and stream events
+		try {
+			const deps = await getDeps();
 
-		res.write(
-			`event: content\ndata: ${JSON.stringify({ sessionId: id, content: stubContent, messageId: assistantMessage.id })}\n\n`,
-		);
-		res.write("event: done\ndata: {}\n\n");
+			for await (const event of runConversationLoop(deps, id)) {
+				res.write(formatSseEvent(event));
+			}
+		} catch (err) {
+			const message = err instanceof Error ? err.message : String(err);
+			res.write(formatSseEvent({ type: "error", message }));
+		}
+
+		res.write(formatSseEvent({ type: "done" }));
 		res.end();
 	};
 

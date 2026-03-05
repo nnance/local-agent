@@ -26,7 +26,7 @@ export const createAppServer = (dbPath?: string, skillsDir?: string): AppServer 
 	const router = createRouter();
 
 	const { handleCreateSession, handleListSessions, handleGetSession } = createSessionHandlers(db);
-	const { handleCreateMessage, handleListMessages } = createMessageHandlers(db);
+	const { handleCreateMessage, handleListMessages } = createMessageHandlers(db, registry);
 	const { handleListSkills } = createSkillHandlers(registry);
 
 	router.get("/api/health", handleHealthCheck);
