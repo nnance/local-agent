@@ -112,10 +112,11 @@ Phased plan for building the Local Agent MVP. Each phase produces a working, tes
    - Send POST to `LLM_API_BASE_URL/chat/completions`
    - Parse SSE response stream chunk by chunk
 2. Implement system prompt loader (read from `SYSTEM_PROMPT_PATH` file)
-3. Implement the conversation loop:
+3. Implement the conversation loop (context-minimized):
    - Load session messages from DB
-   - Prepend system prompt + skill summaries
-   - Attach tool definitions from skill registry
+   - Prepend system prompt + lightweight skill summaries (name + description only)
+   - Attach tool definitions from skill registry (scripts + meta-tools only, no templates/references)
+   - Do NOT load full skill docs, templates, or references into context — these are loaded on demand when the LLM calls `load_skill_template` or `load_skill_reference`
    - Stream LLM response
    - If response contains `tool_calls`: execute via skill registry, append results, loop
    - If response is final text: persist assistant message, end stream
@@ -140,6 +141,8 @@ Phased plan for building the Local Agent MVP. Each phase produces a working, tes
 - [ ] Multi-step tool call loops work (LLM calls tool A, then tool B, then responds)
 - [ ] Assistant messages are persisted to DB after completion
 - [ ] System prompt is loaded from configurable file
+- [ ] Context per turn is minimal: system prompt + skill summaries + tool defs + messages (no templates/references unless requested)
+- [ ] `load_skill_template` and `load_skill_reference` meta-tools work within the conversation loop
 - [ ] Errors (LLM unreachable, invalid API key, script timeout) produce `event: error`
 - [ ] Tests pass via `node --test`
 
