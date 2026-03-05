@@ -1,18 +1,25 @@
 import { type Server, createServer } from "node:http";
+import type Database from "better-sqlite3";
+import { initDatabase } from "./db/index.ts";
 import { createRouter } from "./router.ts";
 import { handleHealthCheck } from "./routes/health.ts";
-import { handleCreateMessage, handleListMessages } from "./routes/messages.ts";
-import { handleCreateSession, handleGetSession, handleListSessions } from "./routes/sessions.ts";
+import { createMessageHandlers } from "./routes/messages.ts";
+import { createSessionHandlers } from "./routes/sessions.ts";
 import { handleListSkills } from "./routes/skills.ts";
 
 export type AppServer = {
 	readonly server: Server;
+	readonly db: Database.Database;
 	readonly start: (port: number) => Promise<void>;
 	readonly stop: () => Promise<void>;
 };
 
-export const createAppServer = (): AppServer => {
+export const createAppServer = (dbPath?: string): AppServer => {
+	const db = initDatabase(dbPath);
 	const router = createRouter();
+
+	const { handleCreateSession, handleListSessions, handleGetSession } = createSessionHandlers(db);
+	const { handleCreateMessage, handleListMessages } = createMessageHandlers(db);
 
 	router.get("/api/health", handleHealthCheck);
 	router.post("/api/sessions", handleCreateSession);
@@ -35,10 +42,11 @@ export const createAppServer = (): AppServer => {
 	const stop = (): Promise<void> =>
 		new Promise((resolve, reject) => {
 			server.close((err) => {
+				db.close();
 				if (err) reject(err);
 				else resolve();
 			});
 		});
 
-	return { server, start, stop };
+	return { server, db, start, stop };
 };
