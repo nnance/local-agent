@@ -5,6 +5,8 @@
 	"type": "module",
 	"workspaces": ["packages/*"],
 	"scripts": {
+		"start": "npm run build -w packages/web && npm run start -w packages/agent",
+		"dev": "npm run dev -w packages/agent",
 		"lint": "biome check .",
 		"lint:fix": "biome check --write .",
 		"format": "biome format --write .",

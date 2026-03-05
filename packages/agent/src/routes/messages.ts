@@ -26,6 +26,7 @@ const formatSseEvent = (event: SseEvent): string => {
 
 export const createMessageHandlers = (db: Database.Database, registry: SkillRegistry) => {
 	let conversationDeps: ConversationDeps | null = null;
+	const activeSessions = new Set<string>();
 
 	const getDeps = async (): Promise<ConversationDeps> => {
 		if (!conversationDeps) {
@@ -49,6 +50,20 @@ export const createMessageHandlers = (db: Database.Database, registry: SkillRegi
 
 		const body = await parseJsonBody<{ content?: string; metadata?: string }>(req);
 		const content = body.content ?? "";
+
+		// Reject empty messages
+		if (content.trim().length === 0) {
+			sendJson(res, 400, { error: "Message content must not be empty" });
+			return;
+		}
+
+		// Reject concurrent requests to the same session
+		if (activeSessions.has(id)) {
+			sendJson(res, 409, { error: "Session is currently processing a message" });
+			return;
+		}
+
+		activeSessions.add(id);
 
 		// Persist user message
 		const userMessage = createMessage(
@@ -80,6 +95,8 @@ export const createMessageHandlers = (db: Database.Database, registry: SkillRegi
 		} catch (err) {
 			const message = err instanceof Error ? err.message : String(err);
 			res.write(formatSseEvent({ type: "error", message }));
+		} finally {
+			activeSessions.delete(id);
 		}
 
 		res.write(formatSseEvent({ type: "done" }));

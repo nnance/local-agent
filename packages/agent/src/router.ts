@@ -18,6 +18,7 @@ export type Router = {
 	readonly handle: (req: IncomingMessage, res: ServerResponse) => void;
 	readonly get: (path: string, handler: RouteHandler) => void;
 	readonly post: (path: string, handler: RouteHandler) => void;
+	readonly setFallback: (handler: FallbackHandler) => void;
 };
 
 const buildPattern = (path: string): { pattern: RegExp; paramNames: string[] } => {
@@ -49,8 +50,27 @@ export const sendJson = (res: ServerResponse, statusCode: number, data: unknown)
 	res.end(body);
 };
 
+const CORS_HEADERS: Record<string, string> = {
+	"Access-Control-Allow-Origin": "*",
+	"Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+	"Access-Control-Allow-Headers": "Content-Type, Authorization",
+};
+
+const setCorsHeaders = (res: ServerResponse): void => {
+	for (const [key, value] of Object.entries(CORS_HEADERS)) {
+		res.setHeader(key, value);
+	}
+};
+
+export type FallbackHandler = (
+	req: IncomingMessage,
+	res: ServerResponse,
+	pathname: string,
+) => void | Promise<void>;
+
 export const createRouter = (): Router => {
 	const routes: Route[] = [];
+	let fallback: FallbackHandler | null = null;
 
 	const addRoute = (method: string, path: string, handler: RouteHandler): void => {
 		const { pattern, paramNames } = buildPattern(path);
@@ -62,6 +82,16 @@ export const createRouter = (): Router => {
 		const url = new URL(req.url ?? "/", `http://${req.headers.host ?? "localhost"}`);
 		const pathname = url.pathname;
 
+		// Add CORS headers to every response
+		setCorsHeaders(res);
+
+		// Handle CORS preflight
+		if (method === "OPTIONS") {
+			res.writeHead(204);
+			res.end();
+			return;
+		}
+
 		for (const route of routes) {
 			if (route.method !== method) continue;
 			const match = pathname.match(route.pattern);
@@ -70,6 +100,12 @@ export const createRouter = (): Router => {
 				route.handler(req, res, params);
 				return;
 			}
+		}
+
+		// Try fallback handler (e.g. static file serving) for non-API routes
+		if (fallback && !pathname.startsWith("/api/")) {
+			fallback(req, res, pathname);
+			return;
 		}
 
 		sendJson(res, 404, { error: "Not Found" });
@@ -82,5 +118,8 @@ export const createRouter = (): Router => {
 		handle,
 		get: (path: string, handler: RouteHandler) => addRoute("GET", path, handler),
 		post: (path: string, handler: RouteHandler) => addRoute("POST", path, handler),
+		setFallback: (handler: FallbackHandler) => {
+			fallback = handler;
+		},
 	};
 };

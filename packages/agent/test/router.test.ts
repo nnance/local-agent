@@ -34,6 +34,10 @@ const createMockRes = (): ServerResponse & {
 		get _ended() {
 			return ended;
 		},
+		setHeader(name: string, value: string | number) {
+			headers[name] = value;
+			return this;
+		},
 		writeHead(code: number, hdrs?: Record<string, string | number>) {
 			statusCode = code;
 			if (hdrs) {
