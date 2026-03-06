@@ -13,7 +13,7 @@ export function App() {
 	}, [createSession]);
 
 	return (
-		<div className="flex h-screen w-screen overflow-hidden bg-background text-foreground">
+		<div className="flex h-screen w-screen overflow-hidden bg-zinc-900 text-zinc-100">
 			<SessionSidebar
 				sessions={sessions}
 				activeSessionId={activeSessionId}
