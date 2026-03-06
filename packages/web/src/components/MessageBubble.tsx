@@ -1,4 +1,3 @@
-import { cn } from "@/lib/utils";
 import type { Message } from "@/types";
 
 type MessageBubbleProps = {
@@ -35,7 +34,7 @@ function renderContent(content: string) {
 		const key = `${part.type}-${part.value.slice(0, 32)}`;
 		if (part.type === "code") {
 			return (
-				<pre key={key} className="my-2 overflow-x-auto rounded-md bg-muted p-3 text-sm">
+				<pre key={key} className="my-2 overflow-x-auto rounded-md bg-zinc-700 p-3 text-sm">
 					<code>{part.value}</code>
 				</pre>
 			);
@@ -68,7 +67,7 @@ function renderInline(text: string) {
 		const key = `seg-${segment.slice(0, 24)}`;
 		if (segment.startsWith("`") && segment.endsWith("`")) {
 			return (
-				<code key={key} className="rounded bg-muted px-1.5 py-0.5 text-sm font-mono">
+				<code key={key} className="rounded bg-zinc-700 px-1.5 py-0.5 font-mono text-sm">
 					{segment.slice(1, -1)}
 				</code>
 			);
@@ -91,17 +90,16 @@ export function MessageBubble({ message }: MessageBubbleProps) {
 	if (!isUser && !isAssistant) return null;
 
 	return (
-		<div className={cn("flex w-full", isUser ? "justify-end" : "justify-start")}>
+		<div className={`flex w-full ${isUser ? "justify-end" : "justify-start"}`}>
 			<div
-				className={cn(
-					"max-w-[80%] rounded-lg px-4 py-2.5 text-sm leading-relaxed",
-					isUser ? "bg-primary text-primary-foreground" : "bg-muted text-foreground",
-				)}
+				className={`max-w-[80%] rounded-lg px-4 py-2.5 text-sm leading-relaxed ${
+					isUser ? "bg-zinc-100 text-zinc-900" : "bg-zinc-800 text-zinc-100"
+				}`}
 			>
 				{isUser ? (
 					<p className="whitespace-pre-wrap">{message.content}</p>
 				) : (
-					<div className="prose-invert">{renderContent(message.content)}</div>
+					<div>{renderContent(message.content)}</div>
 				)}
 			</div>
 		</div>
@@ -120,9 +118,9 @@ export function StreamingBubble({
 
 	return (
 		<div className="flex w-full justify-start">
-			<div className="max-w-[80%] rounded-lg bg-muted px-4 py-2.5 text-sm leading-relaxed text-foreground">
-				<div className="prose-invert">{renderContent(content)}</div>
-				<span className="ml-0.5 inline-block h-4 w-0.5 animate-pulse bg-foreground/70" />
+			<div className="max-w-[80%] rounded-lg bg-zinc-800 px-4 py-2.5 text-sm leading-relaxed text-zinc-100">
+				<div>{renderContent(content)}</div>
+				<span className="ml-0.5 inline-block h-4 w-0.5 animate-pulse bg-zinc-300" />
 			</div>
 		</div>
 	);

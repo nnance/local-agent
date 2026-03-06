@@ -1,7 +1,4 @@
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { cn } from "@/lib/utils";
 import type { ToolActivity as ToolActivityType } from "@/types";
-import { CheckCircle2, ChevronRight, Loader2 } from "lucide-react";
 import { useState } from "react";
 
 type ToolActivityProps = {
@@ -17,40 +14,41 @@ function ToolActivityItem({
 	const isRunning = activity.status === "running";
 
 	return (
-		<Collapsible open={open} onOpenChange={setOpen}>
-			<CollapsibleTrigger className="flex w-full items-center gap-2 rounded-md border border-border/50 bg-card px-3 py-2 text-left text-xs transition-colors hover:bg-accent">
+		<div>
+			<button
+				type="button"
+				onClick={() => setOpen(!open)}
+				className="flex w-full items-center gap-2 rounded-md border border-zinc-700/50 bg-zinc-800 px-3 py-2 text-left text-xs transition-colors hover:bg-zinc-700"
+			>
 				{isRunning ? (
-					<Loader2 className="size-3.5 animate-spin text-muted-foreground" />
+					<span className="size-3.5 animate-spin rounded-full border-2 border-zinc-500 border-t-zinc-200" />
 				) : (
-					<CheckCircle2 className="size-3.5 text-green-500" />
+					<span className="text-green-500">&#10003;</span>
 				)}
-				<span className="font-medium text-foreground">{activity.name}</span>
-				<ChevronRight
-					className={cn(
-						"ml-auto size-3.5 text-muted-foreground transition-transform",
-						open && "rotate-90",
-					)}
-				/>
-			</CollapsibleTrigger>
-			<CollapsibleContent>
-				<div className="mt-1 space-y-1 rounded-md border border-border/50 bg-muted/50 p-2 text-xs">
+				<span className="font-medium text-zinc-100">{activity.name}</span>
+				<span className={`ml-auto text-zinc-500 transition-transform ${open ? "rotate-90" : ""}`}>
+					&#8250;
+				</span>
+			</button>
+			{open && (
+				<div className="mt-1 space-y-1 rounded-md border border-zinc-700/50 bg-zinc-800/50 p-2 text-xs">
 					<div>
-						<span className="font-medium text-muted-foreground">Params: </span>
-						<pre className="mt-0.5 overflow-x-auto whitespace-pre-wrap text-foreground/80">
+						<span className="font-medium text-zinc-500">Params: </span>
+						<pre className="mt-0.5 overflow-x-auto whitespace-pre-wrap text-zinc-300">
 							{JSON.stringify(activity.params, null, 2)}
 						</pre>
 					</div>
 					{activity.result !== undefined && (
 						<div>
-							<span className="font-medium text-muted-foreground">Result: </span>
-							<pre className="mt-0.5 overflow-x-auto whitespace-pre-wrap text-foreground/80">
+							<span className="font-medium text-zinc-500">Result: </span>
+							<pre className="mt-0.5 overflow-x-auto whitespace-pre-wrap text-zinc-300">
 								{activity.result}
 							</pre>
 						</div>
 					)}
 				</div>
-			</CollapsibleContent>
-		</Collapsible>
+			)}
+		</div>
 	);
 }
 
